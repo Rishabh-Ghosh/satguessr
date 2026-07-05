@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SatGuessr - World Satellite Guessing Game</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js Mapping Library CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        
+        <!-- ================= START SCREEN ================= -->
+        <section id="start-screen" class="screen active">
+            <div class="glass-card start-card animate-fade-in">
+                <div class="logo-container">
+                    <div class="logo-glow"></div>
+                    <h1 class="game-title">Sat<span>Guessr</span></h1>
+                </div>
+                <p class="tagline">Can you identify the world's cities purely from their satellite shapes?</p>
+                
+                <div class="rules-container">
+                    <h3>How to Play</h3>
+                    <ul>
+                        <li><span class="icon">🌍</span> You are placed at a random city's satellite view.</li>
+                        <li><span class="icon">🔍</span> Pan and zoom the satellite map to spot landmarks, rivers, coastlines, or street patterns.</li>
+                        <li><span class="icon">📍</span> Place a pin on the small world map in the corner to guess where you are.</li>
+                        <li><span class="icon">⏱️</span> You have <strong>45 seconds</strong> per round!</li>
+                        <li><span class="icon">🔥</span> There are <strong>5 rounds</strong>. The 5th (final) round counts for <strong>double points</strong>!</li>
+                    </ul>
+                </div>
+                
+                <button id="start-btn" class="glow-btn">Start Exploration</button>
+                
+                <div class="attribution">
+                    Data provided by <a href="https://simplemaps.com/data/world-cities" target="_blank" rel="noopener">Simplemaps</a>. Tiles &copy; Esri & OpenStreetMap.
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= GAMEPLAY SCREEN ================= -->
+        <section id="game-screen" class="screen">
+            <!-- Fullscreen Satellite Map -->
+            <div id="sat-map"></div>
+            
+            <!-- Top HUD (Heads-Up Display) -->
+            <header id="hud" class="glass-pane">
+                <div class="hud-item round-tracker">
+                    <span class="hud-label">Round</span>
+                    <span id="current-round" class="hud-value">1 / 5</span>
+                </div>
+                
+                <div class="hud-item timer-container">
+                    <div class="timer-ring-container">
+                        <svg class="timer-svg">
+                            <circle class="timer-circle-bg" cx="22" cy="22" r="18"></circle>
+                            <circle class="timer-circle" id="timer-bar" cx="22" cy="22" r="18"></circle>
+                        </svg>
+                        <span id="timer-text" class="timer-text">45</span>
+                    </div>
+                </div>
+                
+                <div class="hud-item score-tracker">
+                    <span class="hud-label">Total Score</span>
+                    <span id="total-score" class="hud-value">0</span>
+                </div>
+            </header>
+            
+            <!-- Floating Guess Map Inset -->
+            <div id="guess-map-container" class="glass-pane collapsed">
+                <div id="guess-map"></div>
+                <div class="guess-controls">
+                    <button id="guess-btn" class="glow-btn" disabled>Place Pin to Guess</button>
+                    <button id="expand-map-btn" class="icon-btn" title="Toggle Size">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ROUND RESULT MODAL ================= -->
+        <div id="result-overlay" class="modal-overlay">
+            <div class="glass-card result-card">
+                <h2 id="result-title">Round Results</h2>
+                
+                <div class="result-stats">
+                    <div class="stat-box">
+                        <span class="stat-label">Distance</span>
+                        <span id="result-distance" class="stat-value">1,240 km</span>
+                    </div>
+                    <div class="stat-box accent-box">
+                        <span class="stat-label">Score Earned</span>
+                        <span id="result-score" class="stat-value">+4,150</span>
+                        <span id="multiplier-badge" class="badge hide">2x Final Round</span>
+                    </div>
+                </div>
+
+                <div class="city-info-card">
+                    <h3 id="city-name-header">Tokyo, Japan</h3>
+                    <p class="city-details">
+                        <span class="detail-item"><strong class="hud-label">Population:</strong> <span id="city-population">37.7M</span></span>
+                        <span class="detail-item"><strong class="hud-label">Coordinates:</strong> <span id="city-coordinates">35.68°, 139.69°</span></span>
+                    </p>
+                    <p id="city-fun-fact" class="city-fact">
+                        Loading city information...
+                    </p>
+                </div>
+                
+                <button id="next-round-btn" class="glow-btn">Next Round</button>
+            </div>
+        </div>
+
+        <!-- ================= GAME OVER SCREEN ================= -->
+        <section id="game-over-screen" class="screen">
+            <div class="glass-card game-over-card animate-fade-in">
+                <h2>Exploration Complete</h2>
+                <p class="game-over-desc">You've finished your 5-round satellite voyage around the globe!</p>
+                
+                <div class="final-score-section">
+                    <span class="hud-label">Final Score</span>
+                    <span id="final-score" class="final-score-value">18,450</span>
+                    <span id="rank-badge" class="rank-badge">Master Cartographer</span>
+                </div>
+                
+                <!-- Map showing recap of all rounds -->
+                <div id="recap-map-container">
+                    <div id="recap-map"></div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="recap-table">
+                        <thead>
+                            <tr>
+                                <th>Round</th>
+                                <th>City</th>
+                                <th>Distance</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recap-table-body">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <button id="play-again-btn" class="glow-btn">New Voyage</button>
+            </div>
+        </section>
+        
+    </div>
+
+    <!-- Leaflet.js Mapping Library JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Cities Data -->
+    <script src="cities.js"></script>
+    
+    <!-- Game JS -->
+    <script src="app.js"></script>
+</body>
+</html>
