@@ -326,14 +326,14 @@ function startNewRound() {
     const initialZoom = Math.floor(Math.random() * 3) + 12; // 12, 13, or 14
     satMap.setView(targetLatLng, initialZoom);
     
-    // Restrict panning bounds to keep them within metropolitan area (~15 km boundary)
-    const boundsOffset = 0.15; // roughly 16km
+    // Restrict panning bounds to keep them tightly within the city center (~2.2 km boundary)
+    const boundsOffset = 0.02; // roughly 2.2km
     const bounds = L.latLngBounds(
         [currentCity.lat - boundsOffset, currentCity.lng - boundsOffset],
         [currentCity.lat + boundsOffset, currentCity.lng + boundsOffset]
     );
     satMap.setMaxBounds(bounds);
-    satMap.setMinZoom(10);
+    satMap.setMinZoom(12); // Prevent zooming out too far to see surrounding geography
     satMap.setMaxZoom(16);
     
     // Trigger map invalidation to make sure dimensions render properly
